@@ -16,7 +16,7 @@ public:
     { // --- BUS 8080 8-bit ---
       auto cfg = _bus.config();
       cfg.port = 0;                 // I80 usando I2S0
-      cfg.freq_write = 10000000;    // 20 MHz (desça p/ 10 MHz se instável)
+      cfg.freq_write = 30000000;    // 30 MHz (desça p/ 10 MHz se instável)
       cfg.pin_wr  = 11;
       cfg.pin_rd  = 12;
       cfg.pin_rs  = 10;             // RS/DC
@@ -64,29 +64,12 @@ void lgfx_lcd_blit_rgb565(const uint16_t* fb) {
   const int gb_w = 160, gb_h = 144;
   const int screen_w = 320, screen_h = 240;
 
-  // Escala para altura máxima de 240px
-  float scale = (float)screen_h / gb_h; // ≈ 1.6667
-  int scaled_w = gb_w * scale;          // ≈ 266
-  int scaled_h = screen_h;              // 240
+  int x = (screen_w - gb_w) / 2;
+  int y = (screen_h - gb_h) / 2;
 
-  int x = (screen_w - scaled_w) / 2;
-  int y = 0;
-
-  // pushImage não faz escala, então use pushImage para cada pixel ou use drawBitmap/drawRect em loop
-  // Se seu framebuffer já estiver em RGB565, pode usar pushImage, mas precisa escalar manualmente
-  // Aqui está um exemplo simples de escala nearest-neighbor:
-
-  static uint16_t scaled_fb[266 * 240]; // buffer temporário
-
-  for (int dy = 0; dy < scaled_h; dy++) {
-    int sy = dy / scale;
-    for (int dx = 0; dx < scaled_w; dx++) {
-      int sx = dx / scale;
-      scaled_fb[dy * scaled_w + dx] = fb[sy * gb_w + sx];
-    }
-  }
-
-  gfx.pushImage(x, y, scaled_w, scaled_h, scaled_fb);
+  gfx.startWrite();
+  gfx.pushImage(x, y, gb_w, gb_h, fb);
+  gfx.endWrite();
 }
 extern "C" void video_init() {
   lgfx_lcd_init();

@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <string.h>
 #include "rom.h"
@@ -206,9 +205,7 @@ int rom_load(const char *filename)
 
   // aloca na PSRAM se disponível
   unsigned char* rom_storage =
-      (unsigned char*) heap_caps_malloc(len, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-  if (!rom_storage)
-      rom_storage = (unsigned char*) heap_caps_malloc(len, MALLOC_CAP_8BIT);
+      (unsigned char*) heap_caps_malloc(len, MALLOC_CAP_8BIT);
 
   if (!rom_storage) {
     Serial.println("rom_load: malloc falhou");

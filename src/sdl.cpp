@@ -58,21 +58,17 @@ byte* sdl_get_framebuffer(void) {
 }
 
 void sdl_frame(void) {
-  // Converte 2bpp empacotado -> RGB565 plano e envia para a tela
   uint16_t* dst = fb565;
-  int off = 0;
-  for (int y=0; y<GB_H; ++y) {
-    for (int x=0; x<GB_W; ++x, ++off) {
-      uint8_t b   = fb2bpp[off >> 2];
-      uint8_t sh  = (off & 3) << 1;
-      uint8_t idx = (b >> sh) & 0x03;
-      *dst++ = gb2rgb565(idx);
-    }
+  for (int i = 0; i < GB_W * GB_H / 4; ++i) {
+    uint8_t b = fb2bpp[i];
+    *dst++ = gb2rgb565((b >> 0) & 0x3);
+    *dst++ = gb2rgb565((b >> 2) & 0x3);
+    *dst++ = gb2rgb565((b >> 4) & 0x3);
+    *dst++ = gb2rgb565((b >> 6) & 0x3);
   }
   lcd_blit_rgb565(fb565);
-  memset(fb2bpp, 0, sizeof(fb2bpp)); // limpa para o próximo frame (o PPU usa operador |=)
+  memset(fb2bpp, 0, sizeof(fb2bpp));
 }
-
 void sdl_quit(void) {
   // nada a fazer no bare-metal
 }

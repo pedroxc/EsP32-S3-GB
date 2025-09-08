@@ -3,6 +3,9 @@
 #include <SPI.h>
 #include <SD.h>
 
+#include <WiFi.h>
+#include <esp_bt.h>
+
 #include "timer.h"
 #include "mem.h"
 #include "cpu.h"
@@ -25,10 +28,13 @@ static void fatal(const char* msg) {
 }
 
 void setup() {
+    WiFi.mode(WIFI_OFF);
+  btStop();
   Serial.begin(115200);
   delay(200);
   File root = SD.open("/");
   Serial.printf("PSRAM: %u bytes\n", ESP.getPsramSize());
+  
 
 while (true) {
   File entry = root.openNextFile();
