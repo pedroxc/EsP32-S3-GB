@@ -1,91 +1,73 @@
-// src/sdl.cpp  (substitui o que usa Adafruit_*)
-// ---> NADA de Adafruit_* aqui <---
+#include "lcd_lgfx.h"
+#include <Arduino.h>
 
-#include "sdl.h"
-#include "video_lgfx.h"
-#include <string.h>
-#include <stdint.h>
+#define GAMEBOY_WIDTH 160
+#define GAMEBOY_HEIGHT 144
 
-#define GB_W 160
-#define GB_H 144
-#define PIN_UP     35
-#define PIN_DOWN   36
-#define PIN_LEFT   37
-#define PIN_RIGHT  38
-#define PIN_A      39
-#define PIN_B      40
-#define PIN_START  41
-#define PIN_SELECT 42
-// Framebuffer 2bpp (4 pixels por byte) que o PPU do emulador escreve:
-static byte     fb2bpp[GB_W * GB_H / 4];
-// Buffer de saída RGB565 para mandar ao display:
-static uint16_t fb565 [GB_W * GB_H];
+static byte pixels[GAMEBOY_WIDTH * GAMEBOY_HEIGHT / 4];
 
-static inline uint16_t gb2rgb565(uint8_t idx) {
-  // 0=branco, 1=cinza claro, 2=cinza escuro, 3=preto (ajuste se quiser)
-  switch (idx & 0x3) {
-    case 0: return 0xFFFF; // white
-    case 1: return 0xC618; // light gray
-    case 2: return 0x7BEF; // dark gray
-    default:return 0x0000; // black
-  }
+static int button_start, button_select, button_a, button_b, button_down, button_up, button_left, button_right;
+
+// Ajuste os pinos dos botões conforme seu hardware!
+#define BTN_START 41
+#define BTN_RIGHT 38
+
+byte getColorIndexFromFrameBuffer(int x, int y) {
+  int offset = x + y * GAMEBOY_WIDTH;
+  return (pixels[offset >> 2] >> ((offset & 3) << 1)) & 3;
 }
 
-void sdl_init(void) {
-  video_init();   
+// Paleta Game Boy (preto, cinza escuro, cinza claro, branco)
+const uint16_t color[] = {0x0000, 0x528A, 0xA514, 0xFFFF};
 
- 
-  pinMode(PIN_UP,     INPUT_PULLUP);
-  pinMode(PIN_DOWN,   INPUT_PULLUP);
-  pinMode(PIN_LEFT,   INPUT_PULLUP);
-  pinMode(PIN_RIGHT,  INPUT_PULLUP);
-  pinMode(PIN_A,      INPUT_PULLUP);
-  pinMode(PIN_B,      INPUT_PULLUP);
-  pinMode(PIN_START,  INPUT_PULLUP);
-  pinMode(PIN_SELECT, INPUT_PULLUP);
+void SDL_Flip(byte *screen) {
+  int i, j;
+  gfx.startWrite();
+  for (i = 0; i < GAMEBOY_WIDTH; i++) {
+    for (j = 0; j < GAMEBOY_HEIGHT; j++) {
+      gfx.drawPixel(i, j, color[getColorIndexFromFrameBuffer(i, j)]);
+    }
+  }
+  gfx.endWrite();
+}
+
+void sdl_init(void)
+{
+  gfx.setRotation(1); // Landscape
+  gfx.fillScreen(TFT_BLACK);
+
+  // pinMode(BTN_START, INPUT_PULLUP);
+  // pinMode(BTN_RIGHT, INPUT_PULLUP);
+
+  // Se quiser testar a tela:
+  gfx.fillScreen(TFT_RED);
 }
 
 int sdl_update(void) {
-  // se você quiser encerrar o emulador, pode colocar alguma condição aqui
+  button_start = !digitalRead(BTN_START);
+  button_right = !digitalRead(BTN_RIGHT);
+  // Adicione outros botões conforme necessário
   return 0;
 }
 
-// unsigned int sdl_get_buttons(void)   { return 0; }  // START/SELECT/B/A (por enquanto, nenhum)
-// unsigned int sdl_get_directions(void){ return 0; }  // CIMA/BAIXO/ESQ/DIR
-
-byte* sdl_get_framebuffer(void) {
-  return fb2bpp;           // o PPU escreve aqui (usa |=, por isso limpamos no frame)
+unsigned int sdl_get_buttons(void)
+{
+  return (button_start*8) | (button_select*4) | (button_b*2) | button_a;
 }
 
-void sdl_frame(void) {
-  uint16_t* dst = fb565;
-  for (int i = 0; i < GB_W * GB_H / 4; ++i) {
-    uint8_t b = fb2bpp[i];
-    *dst++ = gb2rgb565((b >> 0) & 0x3);
-    *dst++ = gb2rgb565((b >> 2) & 0x3);
-    *dst++ = gb2rgb565((b >> 4) & 0x3);
-    *dst++ = gb2rgb565((b >> 6) & 0x3);
-  }
-  lcd_blit_rgb565(fb565);
-  memset(fb2bpp, 0, sizeof(fb2bpp));
-}
-void sdl_quit(void) {
-  // nada a fazer no bare-metal
-}
-unsigned int sdl_get_directions(void) {
-  unsigned int dir = 0;
-  if (!digitalRead(PIN_UP))    dir |= (1 << 0);
-  if (!digitalRead(PIN_DOWN))  dir |= (1 << 1);
-  if (!digitalRead(PIN_LEFT))  dir |= (1 << 2);
-  if (!digitalRead(PIN_RIGHT)) dir |= (1 << 3);
-  return dir;
+unsigned int sdl_get_directions(void)
+{
+  return (button_down*8) | (button_up*4) | (button_left*2) | button_right;
 }
 
-unsigned int sdl_get_buttons(void) {
-  unsigned int btn = 0;
-  if (!digitalRead(PIN_A))      btn |= (1 << 0);
-  if (!digitalRead(PIN_B))      btn |= (1 << 1);
-  if (!digitalRead(PIN_START))  btn |= (1 << 2);
-  if (!digitalRead(PIN_SELECT)) btn |= (1 << 3);
-  return btn;
+byte* sdl_get_framebuffer(void)
+{
+  return pixels;
 }
+
+void sdl_frame(void)
+{
+  SDL_Flip(pixels);
+}
+
+

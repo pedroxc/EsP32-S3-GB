@@ -4,6 +4,7 @@
 #include "interrupt.h"
 #include "sdl.h"
 #include "mem.h"
+#include "lcd_lgfx.h"
 
 
 static int lcd_line;
@@ -326,6 +327,19 @@ static void draw_stuff(void)
 	}
 }
 
+void lcd_init() {
+  gfx.setRotation(1); // Landscape
+  gfx.fillScreen(TFT_BLACK);
+}
+
+void lcd_blit_rgb565(const uint16_t* fb) {
+  int x = (320 - 160) / 2;
+  int y = (240 - 144) / 2;
+  gfx.startWrite();
+  gfx.pushImage(x, y, 160, 144, fb);
+  gfx.endWrite();
+}
+
 int lcd_cycle(void)
 {
 	int cycles = cpu_get_cycles();
@@ -362,3 +376,4 @@ int lcd_cycle(void)
 	prev_line = lcd_line;
 	return 1;
 }
+

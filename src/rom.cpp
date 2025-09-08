@@ -1,10 +1,7 @@
+
 #include <stdio.h>
 #include <string.h>
 #include "rom.h"
-#include <Arduino.h>
-#include <FS.h>
-#include <SD.h>
-#include "esp_heap_caps.h"
 
 const unsigned char *bytes;
 unsigned int mapper;
@@ -190,38 +187,45 @@ unsigned int rom_get_mapper(void)
 
 int rom_load(const char *filename)
 {
-  File f = SD.open(filename, FILE_READ);
-  if (!f) {
-    Serial.printf("rom_load: nao abriu '%s'\n", filename);
-    return 0;
-  }
+  /*
+#ifdef _WIN32
+	HANDLE f, map;
+#else
+	int f;
+	size_t length;
+	struct stat st;
+#endif
+	unsigned char *bytes;
 
-  size_t len = f.size();
-  if (len < 0x150) {
-    Serial.println("rom_load: arquivo muito pequeno");
-    f.close();
-    return 0;
-  }
+#ifdef _WIN32
+	f = CreateFile(filename, GENERIC_READ, FILE_SHARE_READ, NULL,
+		OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
-  // aloca na PSRAM se disponível
-  unsigned char* rom_storage =
-      (unsigned char*) heap_caps_malloc(len, MALLOC_CAP_8BIT);
+	if(f == INVALID_HANDLE_VALUE)
+		return 0;
 
-  if (!rom_storage) {
-    Serial.println("rom_load: malloc falhou");
-    f.close();
-    return 0;
-  }
+	map = CreateFileMapping(f, NULL, PAGE_READONLY, 0, 0, NULL);
+	if(!map)
+		return 0;
 
-  size_t n = f.read(rom_storage, len);
-  f.close();
-  if (n != len) {
-    Serial.printf("rom_load: leitura incompleta (%u/%u)\n", (unsigned)n, (unsigned)len);
-    heap_caps_free(rom_storage);
-    return 0;
-  }
+	bytes = MapViewOfFile(map, FILE_MAP_READ, 0, 0, 0);
+	if(!bytes)
+		return 0;
+#else
+	f = open(filename, O_RDONLY);
+	if(f == -1)
+		return 0;
+	if(fstat(f, &st) == -1)
+		return 0;
 
-  return rom_init(rom_storage);
+	bytes = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, f, 0);
+	if(!bytes)
+		return 0;
+#endif
+*/
+
+	//return rom_init(bytes);
+  return 0;
 }
 const unsigned char *rom_getbytes(void)
 {
