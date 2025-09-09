@@ -10,9 +10,9 @@
 #include "sdl.h"
 #include "rom.h"   // cabeçalho do projeto (NÃO o rom.h gerado por bin2h)
 
-#define SD_SCK   18
+#define SD_SCK   16
 #define SD_MOSI  17
-#define SD_MISO  16
+#define SD_MISO  18
 #define SD_CS    15
 #define ROM_PATH "/gb.gb"   // coloque sua ROM com esse nome na raiz do SD
 
