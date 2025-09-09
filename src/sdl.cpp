@@ -1,95 +1,242 @@
-// src/sdl.cpp  (substitui o que usa Adafruit_*)
-// ---> NADA de Adafruit_* aqui <---
 
-#include "sdl.h"
-#include "video_lgfx.h"
-#include <string.h>
-#include <stdint.h>
 
-#define GB_W 160
-#define GB_H 144
-#define PIN_UP     35
-#define PIN_DOWN   36
-#define PIN_LEFT   37
-#define PIN_RIGHT  38
-#define PIN_A      39
-#define PIN_B      40
-#define PIN_START  41
-#define PIN_SELECT 42
-// Framebuffer 2bpp (4 pixels por byte) que o PPU do emulador escreve:
-static byte     fb2bpp[GB_W * GB_H / 4];
-// Buffer de saída RGB565 para mandar ao display:
-static uint16_t fb565 [GB_W * GB_H];
+/*
+#include <SDL/SDL.h>
+#include <sys/time.h>
+static SDL_Surface *screen;
+static unsigned int frames;
+static struct timeval tv1, tv2;
 
-static inline uint16_t gb2rgb565(uint8_t idx) {
-  // 0=branco, 1=cinza claro, 2=cinza escuro, 3=preto (ajuste se quiser)
-  switch (idx & 0x3) {
-    case 0: return 0xFFFF; // white
-    case 1: return 0xC618; // light gray
-    case 2: return 0x7BEF; // dark gray
-    default:return 0x0000; // black
-  }
+
+
+static int button_start, button_select, button_a, button_b, button_down, button_up, button_left, button_right;
+
+void sdl_init(void)
+{
+	SDL_Init(SDL_INIT_VIDEO);
+	screen = SDL_SetVideoMode(640, 480, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
 }
 
-void sdl_init(void) {
-  video_init();   
+int sdl_update(void)
+{
+	SDL_Event e;
 
- 
-  pinMode(PIN_UP,     INPUT_PULLUP);
-  pinMode(PIN_DOWN,   INPUT_PULLUP);
-  pinMode(PIN_LEFT,   INPUT_PULLUP);
-  pinMode(PIN_RIGHT,  INPUT_PULLUP);
-  pinMode(PIN_A,      INPUT_PULLUP);
-  pinMode(PIN_B,      INPUT_PULLUP);
-  pinMode(PIN_START,  INPUT_PULLUP);
-  pinMode(PIN_SELECT, INPUT_PULLUP);
+	while(SDL_PollEvent(&e))
+	{
+		if(e.type == SDL_QUIT)
+			return 1;
+
+		if(e.type == SDL_KEYDOWN)
+		{
+			switch(e.key.keysym.sym)
+			{
+				case SDLK_a:
+					button_a = 1;
+				break;
+				case SDLK_s:
+					button_b = 1;
+				break;
+				case SDLK_d:
+					button_select = 1;
+				break;
+				case SDLK_f:
+					button_start = 1;
+				break;
+				case SDLK_LEFT:
+					button_left = 1;
+				break;
+				case SDLK_RIGHT:
+					button_right = 1;
+				break;
+				case SDLK_DOWN:
+					button_down = 1;
+				break;
+				case SDLK_UP:
+					button_up = 1;
+				break;
+			}
+		}
+
+		if(e.type == SDL_KEYUP)
+		{
+			switch(e.key.keysym.sym)
+			{
+				case SDLK_a:
+					button_a = 0;
+				break;
+				case SDLK_s:
+					button_b = 0;
+				break;
+				case SDLK_d:
+					button_select = 0;
+				break;
+				case SDLK_f:
+					button_start = 0;
+				break;
+				case SDLK_LEFT:
+					button_left = 0;
+				break;
+				case SDLK_RIGHT:
+					button_right = 0;
+				break;
+				case SDLK_DOWN:
+					button_down = 0;
+				break;
+				case SDLK_UP:
+					button_up = 0;
+				break;
+			}
+		}
+
+	}
+	return 0;
 }
 
-int sdl_update(void) {
-  // se você quiser encerrar o emulador, pode colocar alguma condição aqui
-  return 0;
+unsigned int sdl_get_buttons(void)
+{
+	return (button_start*8) | (button_select*4) | (button_b*2) | button_a;
 }
 
-// unsigned int sdl_get_buttons(void)   { return 0; }  // START/SELECT/B/A (por enquanto, nenhum)
-// unsigned int sdl_get_directions(void){ return 0; }  // CIMA/BAIXO/ESQ/DIR
-
-byte* sdl_get_framebuffer(void) {
-  return fb2bpp;           // o PPU escreve aqui (usa |=, por isso limpamos no frame)
+unsigned int sdl_get_directions(void)
+{
+	return (button_down*8) | (button_up*4) | (button_left*2) | button_right;
 }
 
-void sdl_frame(void) {
-  // Converte 2bpp empacotado -> RGB565 plano e envia para a tela
-  uint16_t* dst = fb565;
-  int off = 0;
-  for (int y=0; y<GB_H; ++y) {
-    for (int x=0; x<GB_W; ++x, ++off) {
-      uint8_t b   = fb2bpp[off >> 2];
-      uint8_t sh  = (off & 3) << 1;
-      uint8_t idx = (b >> sh) & 0x03;
-      *dst++ = gb2rgb565(idx);
+unsigned int *sdl_get_framebuffer(void)
+{
+	return screen->pixels;
+}
+
+void sdl_frame(void)
+{
+	if(frames == 0)
+  		gettimeofday(&tv1, NULL);
+	
+	frames++;
+	if(frames % 1000 == 0)
+	{
+		gettimeofday(&tv2, NULL);
+		printf("Frames %d, seconds: %d, fps: %d\n", frames, tv2.tv_sec - tv1.tv_sec, frames/(tv2.tv_sec - tv1.tv_sec));
+	}
+	SDL_Flip(screen);
+}
+
+void sdl_quit()
+{
+	SDL_Quit();
+}
+*/
+#include "SPI.h"
+#include "Adafruit_GFX.h"
+#include "Adafruit_ILI9341.h"
+
+#define _cs   22   // 3 goes to TFT CS
+#define _dc   21   // 4 goes to TFT DC
+#define _mosi 23  // 5 goes to TFT MOSI
+#define _sclk 19  // 6 goes to TFT SCK/CLK
+#define _rst  18  // ESP RST to TFT RESET
+#define _miso 25    // Not connected
+#define _led   5
+//       3.3V     // Goes to TFT LED  
+//       5v       // Goes to TFT Vcc
+//       Gnd      // Goes to TFT Gnd        
+
+// Use hardware SPI (on ESP D4 and D8 as above)
+//Adafruit_ILI9341 tft = Adafruit_ILI9341(_CS, _DC);
+// If using the breakout, change pins as desired
+Adafruit_ILI9341 tft = Adafruit_ILI9341(_cs, _dc, _mosi, _sclk, _rst, _miso);
+
+void backlighting(bool state) {
+    if (!state) {
+        digitalWrite(_led, LOW);
     }
-  }
-  lcd_blit_rgb565(fb565);
-  memset(fb2bpp, 0, sizeof(fb2bpp)); // limpa para o próximo frame (o PPU usa operador |=)
+    else {
+        digitalWrite(_led, HIGH);
+    }
 }
 
-void sdl_quit(void) {
-  // nada a fazer no bare-metal
+#define GAMEBOY_HEIGHT 160
+#define GAMEBOY_WIDTH 144
+byte pixels[GAMEBOY_HEIGHT * GAMEBOY_WIDTH / 4];
+
+static int button_start, button_select, button_a, button_b, button_down, button_up, button_left, button_right;
+
+byte getColorIndexFromFrameBuffer(int x, int y) {
+  int offset = x + y * 160;
+  return (pixels[offset >> 2] >> ((offset & 3) << 1)) & 3;
 }
-unsigned int sdl_get_directions(void) {
-  unsigned int dir = 0;
-  if (!digitalRead(PIN_UP))    dir |= (1 << 0);
-  if (!digitalRead(PIN_DOWN))  dir |= (1 << 1);
-  if (!digitalRead(PIN_LEFT))  dir |= (1 << 2);
-  if (!digitalRead(PIN_RIGHT)) dir |= (1 << 3);
-  return dir;
+const int color[] = {0x000000, 0x555555, 0xAAAAAA, 0xFFFFFF};
+
+void SDL_Flip(byte *screen){
+  //tft.fillScreen(ILI9341_BLACK);
+  int i,j;
+  for(i = 0;i<GAMEBOY_WIDTH;i++){
+    for(j = 0;j<GAMEBOY_HEIGHT;j++){
+        tft.drawPixel(j, i, color[getColorIndexFromFrameBuffer(j, i)]);
+      }
+    }
+    //memset(pixels,0,GAMEBOY_HEIGHT * GAMEBOY_WIDTH / 4*sizeof(byte));
 }
 
-unsigned int sdl_get_buttons(void) {
-  unsigned int btn = 0;
-  if (!digitalRead(PIN_A))      btn |= (1 << 0);
-  if (!digitalRead(PIN_B))      btn |= (1 << 1);
-  if (!digitalRead(PIN_START))  btn |= (1 << 2);
-  if (!digitalRead(PIN_SELECT)) btn |= (1 << 3);
-  return btn;
+void sdl_init(void)
+{
+  tft.begin();
+  pinMode(_led, OUTPUT);
+  backlighting(true);
+  
+  // read diagnostics (optional but can help debug problems)
+  uint8_t x = tft.readcommand8(ILI9341_RDMODE);
+  Serial.print("Display Power Mode: 0x"); Serial.println(x, HEX);
+  x = tft.readcommand8(ILI9341_RDMADCTL);
+  Serial.print("MADCTL Mode: 0x"); Serial.println(x, HEX);
+  x = tft.readcommand8(ILI9341_RDPIXFMT);
+  Serial.print("Pixel Format: 0x"); Serial.println(x, HEX);
+  x = tft.readcommand8(ILI9341_RDIMGFMT);
+  Serial.print("Image Format: 0x"); Serial.println(x, HEX);
+  x = tft.readcommand8(ILI9341_RDSELFDIAG);
+  Serial.print("Self Diagnostic: 0x"); Serial.println(x, HEX); 
+  tft.fillScreen(ILI9341_RED);
+
+  gpio_pad_select_gpio(GPIO_NUM_14);
+  gpio_set_direction(GPIO_NUM_14, GPIO_MODE_INPUT);
+
+  gpio_pad_select_gpio(GPIO_NUM_27);
+  gpio_set_direction(GPIO_NUM_27, GPIO_MODE_INPUT);
 }
+int sdl_update(void){
+	//tft.fillScreen(ILI9341_RED);
+    button_start = !gpio_get_level(GPIO_NUM_14);
+    button_right = !gpio_get_level(GPIO_NUM_27);
+	return 0;
+}
+unsigned int sdl_get_buttons(void)
+{
+	return (button_start*8) | (button_select*4) | (button_b*2) | button_a;
+}
+
+unsigned int sdl_get_directions(void)
+{
+	return (button_down*8) | (button_up*4) | (button_left*2) | button_right;
+}
+
+byte* sdl_get_framebuffer(void)
+{
+	return pixels;
+}
+void sdl_frame(void)
+{
+  /* 
+	if(frames == 0)
+		gettimeofday(&tv1, NULL);
+	
+	frames++;
+	if(frames % 1000 == 0)
+	{
+		gettimeofday(&tv2, NULL);
+		printf("Frames %d, seconds: %d, fps: %d\n", frames, tv2.tv_sec - tv1.tv_sec, frames/(tv2.tv_sec - tv1.tv_sec));
+	}
+ */
+	SDL_Flip(pixels);
+}
+
+

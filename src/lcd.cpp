@@ -362,3 +362,4 @@ int lcd_cycle(void)
 	prev_line = lcd_line;
 	return 1;
 }
+
