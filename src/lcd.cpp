@@ -328,6 +328,7 @@ static void draw_stuff(void)
 }
 
 void lcd_init() {
+  gfx.init();
   gfx.setRotation(1); // Landscape
   gfx.fillScreen(TFT_BLACK);
 }

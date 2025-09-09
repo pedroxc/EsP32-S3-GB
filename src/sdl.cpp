@@ -36,8 +36,8 @@ void sdl_init(void)
   gfx.setRotation(1); // Landscape
   gfx.fillScreen(TFT_BLACK);
 
-  // pinMode(BTN_START, INPUT_PULLUP);
-  // pinMode(BTN_RIGHT, INPUT_PULLUP);
+  pinMode(BTN_START, INPUT_PULLUP);
+  pinMode(BTN_RIGHT, INPUT_PULLUP);
 
   // Se quiser testar a tela:
   gfx.fillScreen(TFT_RED);
@@ -67,7 +67,19 @@ byte* sdl_get_framebuffer(void)
 
 void sdl_frame(void)
 {
-  SDL_Flip(pixels);
+  static uint16_t rgb565[GAMEBOY_WIDTH * GAMEBOY_HEIGHT];
+
+  for (int y = 0; y < GAMEBOY_HEIGHT; y++) {
+    for (int x = 0; x < GAMEBOY_WIDTH; x++) {
+      uint8_t idx = getColorIndexFromFrameBuffer(x, y);
+      rgb565[x + y * GAMEBOY_WIDTH] = color[idx];
+    }
+  }
+  int px = (320 - GAMEBOY_WIDTH) / 2;
+  int py = (240 - GAMEBOY_HEIGHT) / 2;
+  gfx.startWrite();
+  gfx.pushImage(px, py, GAMEBOY_WIDTH, GAMEBOY_HEIGHT, rgb565);
+  gfx.endWrite();
 }
 
 
